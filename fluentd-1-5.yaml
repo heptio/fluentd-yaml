@@ -40,6 +40,9 @@ spec:
         - name: varlibdockercontainers
           mountPath: /var/lib/docker/containers
           readOnly: true
+        - name: fluentdconf
+          mountPath: /fluentd/etc/fluent.conf
+          subPath: fluent.conf
       terminationGracePeriodSeconds: 30
       volumes:
       - name: varlog
@@ -48,6 +51,37 @@ spec:
       - name: varlibdockercontainers
         hostPath:
           path: /var/lib/docker/containers
+      - name: fluentdconf
+        configMap:
+          name: fluentd-configmap
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: fluentd-configmap
+data:
+  fluent.conf: |-
+    @include kubernetes.conf
+    <match **>
+       type elasticsearch
+       log_level info
+       include_tag_key true
+       host "#{ENV['FLUENT_ELASTICSEARCH_HOST']}"
+       port "#{ENV['FLUENT_ELASTICSEARCH_PORT']}"
+       logstash_format true
+       buffer_chunk_limit 2M
+       buffer_queue_limit 32
+       flush_interval 5s
+       max_retry_wait 30
+       disable_retry_limit
+       num_threads 8
+
+       ### AWS ElasticSearch needs this set to false.  See
+       ### https://discuss.elastic.co/t/elasitcsearch-ruby-raises-cannot-get-new-connection-from-pool-error/36252/10
+       reload_connections false
+    </match>
+
 
 ---
 apiVersion: rbac.authorization.k8s.io/v1alpha1
