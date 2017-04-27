@@ -14,12 +14,11 @@ spec:
         k8s-app: fluentd-logging
         version: v1
         kubernetes.io/cluster-service: "true"
+      annotations:
+        scheduler.alpha.kubernetes.io/tolerations: |
+          [{"key": "dedicated", "value": "master", "effect": "NoSchedule" }]
     spec:
       serviceAccountName: fluentd-service-account
-      tolerations:
-      - key: node-role.kubernetes.io/master
-        operator: Exists
-        effect: NoSchedule
       containers:
       - name: fluentd
         image: quay.io/fluent/fluentd-kubernetes-daemonset
